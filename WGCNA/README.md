@@ -124,6 +124,12 @@ The Dockerfile copies `WGCNA_CHEMM_v1.R` into the container at `/home/ruser/`. T
 
 The `run_wgcna_goseq.sh` script expects both `.sif` container files to be in the working directory. Adjust paths in the script if containers are stored elsewhere.
 
+## Citation
+
+This repository is part of an ongoing study. If you use or adapt any code from this repository, please cite it. A DOI will be provided upon publication. In the meantime, please reference this repository directly:
+
+> https://github.com/n-bsub/bioinformatics-containers/WGCNA
+
 ## License
 
 MIT
