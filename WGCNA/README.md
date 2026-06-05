@@ -1,49 +1,82 @@
 # WGCNA Docker Container
 
-Dockerfile and analysis script for running Weighted Gene Co-expression Network Analysis (WGCNA) with supporting R packages in a reproducible, containerized environment. Built for use on HPC clusters via Apptainer/Singularity.
+Dockerfile and analysis scripts for running Weighted Gene Co-expression Network Analysis (WGCNA) with GO enrichment in a reproducible, containerized environment. Built for use on HPC clusters via Apptainer/Singularity.
 
 ## Overview
 
-The included R script (`WGCNA_CHEMM_v1.R`) performs a complete WGCNA pipeline on metatranscriptomic data:
+This folder contains a complete WGCNA-to-GO-enrichment pipeline that chains two containers:
 
-- TMM normalization and voom transformation (edgeR/limma) of gene count matrices
-- Optional filtering to fungal-annotated genes using SwissProt BLAST annotations
-- Sample clustering and soft threshold power selection for scale-free topology
-- Signed hybrid network construction with blockwise module detection
-- Module eigengene computation and module–trait correlation heatmaps
-- Gene-module mapping with functional annotation export
+1. **WGCNA container** (custom-built) — voom normalization, signed hybrid network construction, blockwise module detection, module–trait correlation, and gene-module mapping
+2. **Trinity container** (pre-built from Docker Hub) — GOseq enrichment analysis per module using Trinity's `run_GOseq.pl`
 
-## Included packages
+The SLURM job script (`run_wgcna_goseq.sh`) orchestrates both steps, manages input/output directories, and collects results automatically.
 
-**Bioconductor:** WGCNA, DESeq2, edgeR, limma
+## Pipeline steps
 
-**CRAN:** dplyr, tibble, tidyr, stringr, ggplot2, data.table, glue, readxl, writexl, vegan, RColorBrewer, matrixStats, remotes
-
-**Base image:** [rocker/r-ver:4.3.2](https://hub.docker.com/r/rocker/r-ver) (R 4.3.2)
+```
+RSEM gene counts + metadata
+        │
+        ▼
+┌─────────────────────────┐
+│  WGCNA container        │
+│  ─ TMM + voom           │
+│  ─ Network construction │
+│  ─ Module detection     │
+│  ─ Module–trait corr.   │
+│  ─ Gene-module export   │
+└─────────┬───────────────┘
+          │ module gene lists
+          ▼
+┌─────────────────────────┐
+│  Trinity container      │
+│  ─ GOseq per module     │
+└─────────┬───────────────┘
+          │ enrichment results
+          ▼
+┌─────────────────────────┐
+│  WGCNA container        │
+│  ─ Combine GOseq        │
+│    results into Excel   │
+└─────────────────────────┘
+```
 
 ## Repository contents
 
 ```
 wgcna/
 ├── Dockerfile              Container recipe with all R dependencies
-├── WGCNA_CHEMM_v1.R        Complete WGCNA analysis pipeline
+├── WGCNA_CHEMM_v1.R        WGCNA analysis pipeline
+├── combine_enrichment.R     Collects GOseq results into a single Excel workbook
+├── run_wgcna_goseq.sh       SLURM job script orchestrating the full pipeline
 └── README.md
 ```
 
+## Included packages (WGCNA container)
+
+**Bioconductor:** WGCNA, DESeq2, edgeR, limma
+
+**CRAN:** dplyr, tibble, tidyr, stringr, ggplot2, data.table, glue, readxl, writexl, readr, vegan, RColorBrewer, matrixStats, remotes
+
+**Base image:** [rocker/r-ver:4.3.2](https://hub.docker.com/r/rocker/r-ver) (R 4.3.2)
+
+**Trinity container:** [trinityrnaseq/trinityrnaseq:2.12.0](https://hub.docker.com/r/trinityrnaseq/trinityrnaseq) (pulled from Docker Hub, provides `run_GOseq.pl`)
+
 ## Input files
 
-The script reads input from a directory specified via the `INPUT_DIR` environment variable. The following files are expected:
+The scripts read input from a directory specified via the `INPUT_DIR` environment variable. The following files are expected:
 
-| File | Description |
-|---|---|
-| `RSEM.gene.counts.matrix` | Trinity/RSEM raw gene-level count matrix (tab-delimited) |
-| `RSEM.gene.TMM.EXPR.matrix` | TMM-normalized expression matrix (tab-delimited) |
-| `Blast_GO_wide_CHEMM.RDS` | SwissProt BLAST annotations with GO terms (R object) |
-| `Metadata_wgcna.txt` | Sample metadata with trait variables for module–trait correlation (tab-delimited, must contain a `Samples` or `Sample` column) |
+| File | Used by | Description |
+|---|---|---|
+| `RSEM.gene.counts.matrix` | WGCNA | Trinity/RSEM raw gene-level count matrix (tab-delimited) |
+| `RSEM.gene.TMM.EXPR.matrix` | WGCNA | TMM-normalized expression matrix (tab-delimited) |
+| `Blast_GO_wide_CHEMM.RDS` | WGCNA | SwissProt BLAST annotations with GO terms (R object) |
+| `Metadata_wgcna.txt` | WGCNA | Sample metadata with trait variables (tab-delimited, must contain a `Samples` or `Sample` column) |
+| `go_annotations_CHEMM_G.txt` | GOseq | GO term assignments for genes (tab-delimited) |
+| `CD_HIT_EST_CHEMM_all.gene_lengths.txt` | GOseq | Gene length file for GOseq bias correction (tab-delimited) |
 
 ## Build and deploy
 
-### 1. Build Docker image locally
+### 1. Build WGCNA Docker image locally
 
 ```bash
 docker build -t wgcna .
@@ -55,61 +88,60 @@ docker build -t wgcna .
 docker save wgcna -o wgcna.tar
 ```
 
-### 3. Transfer to HPC
+### 3. Pull Trinity image
 
 ```bash
-scp wgcna.tar username@hpc-cluster:/path/to/containers/
+docker pull trinityrnaseq/trinityrnaseq:2.12.0
+docker save trinityrnaseq/trinityrnaseq:2.12.0 -o trinity.tar
 ```
 
-### 4. Convert to Apptainer SIF on HPC
+### 4. Transfer to HPC
+
+```bash
+scp wgcna.tar trinity.tar username@hpc-cluster:/path/to/containers/
+```
+
+### 5. Convert to Apptainer SIF on HPC
 
 ```bash
 apptainer build wgcna.sif docker-archive://wgcna.tar
+apptainer build trinityrnaseq_2.12.sif docker-archive://trinity.tar
 ```
 
-### 5. Run on HPC
+### 6. Run the full pipeline
 
-Pass the input directory as an environment variable:
+Place input files in a `runs/wgcna_input/` directory, then submit:
 
 ```bash
-apptainer exec --env INPUT_DIR=/path/to/input/data wgcna.sif Rscript WGCNA_CHEMM_v1.R
+sbatch run_wgcna_goseq.sh
 ```
 
-Or within a SLURM job script:
-
-```bash
-#!/bin/bash
-#SBATCH --nodes=1
-#SBATCH --ntasks-per-node=4
-#SBATCH --mem=32GB
-#SBATCH --time=2:00:00
-
-export INPUT_DIR=/path/to/input/data
-
-apptainer exec /path/to/wgcna.sif Rscript /home/ruser/WGCNA_CHEMM_v1.R
-```
+The script automatically creates a timestamped run directory under `runs/`, executes WGCNA module detection, runs GOseq enrichment per module, combines results into an Excel workbook, and logs all output.
 
 ## Outputs
 
-The script generates the following output files in the working directory:
-
-| File | Description |
-|---|---|
-| `gene_module_mapping.txt` | Gene-to-module assignments with functional annotations |
-| `modules/<color>_module.txt` | Individual module gene lists |
-| `Module_Trait_Correlation_Heatmap_Dust.pdf` | Module–trait relationship heatmap |
-| `Module_Trait_Correlations.csv` | Correlation values (modules × traits) |
-| `Module_Trait_Pvalues.csv` | P-values for module–trait correlations |
-| `MEs.RDS` | Module eigengenes (R object) |
-| `norm_data.RDS` | Normalized expression matrix (R object) |
-| `module_colors.RDS` | Module color assignments (R object) |
-| `voom_halla_sprot.txt` | Voom-normalized data with SwissProt IDs for downstream integration |
-| `sft_plot.pdf` | Scale-free topology fit and mean connectivity plots |
-| `samples_cluster.pdf` | Sample dendrogram |
+| File | Source | Description |
+|---|---|---|
+| `gene_module_mapping.txt` | WGCNA | Gene-to-module assignments with functional annotations |
+| `modules/<color>_module.txt` | WGCNA | Individual module gene lists |
+| `Module_Trait_Correlation_Heatmap_Dust.pdf` | WGCNA | Module–trait relationship heatmap |
+| `Module_Trait_Correlations.csv` | WGCNA | Correlation values (modules × traits) |
+| `Module_Trait_Pvalues.csv` | WGCNA | P-values for module–trait correlations |
+| `MEs.RDS` | WGCNA | Module eigengenes (R object) |
+| `norm_data.RDS` | WGCNA | Normalized expression matrix (R object) |
+| `module_colors.RDS` | WGCNA | Module color assignments (R object) |
+| `voom_halla_sprot.txt` | WGCNA | Voom-normalized data with SwissProt IDs for downstream integration |
+| `sft_plot.pdf` | WGCNA | Scale-free topology fit and mean connectivity plots |
+| `samples_cluster.pdf` | WGCNA | Sample dendrogram |
+| `Enrichment_results/*.GOseq.enriched` | GOseq | Enriched GO terms per module |
+| `Enrichment_results/*.GOseq.depleted` | GOseq | Depleted GO terms per module |
+| `Combined_GOseq_Enrichment.xlsx` | Combine | All module enrichment results in a single Excel workbook |
 
 ## Usage notes
 
 The Dockerfile copies `WGCNA_CHEMM_v1.R` into the container at `/home/ruser/`. To run your own WGCNA script instead, use `apptainer exec` with your script path, the container provides all necessary R packages regardless of which script is run.
+
+The `run_wgcna_goseq.sh` script expects both `.sif` container files to be in the working directory. Adjust paths in the script if containers are stored elsewhere.
 
 ## License
 
