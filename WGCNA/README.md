@@ -1,6 +1,6 @@
 # WGCNA–GOseq Containerized Pipeline
 
-Dockerfile and analysis scripts for running Weighted Gene Co-expression Network Analysis (WGCNA) with GO enrichment in a reproducible, containerized environment. Built for use on HPC clusters via Apptainer/Singularity.
+Dockerfile and analysis scripts for running Weighted Gene Co-expression Network Analysis (WGCNA) with GO enrichment in a containerized environment. Built for use on HPC clusters via Apptainer/Singularity.
 
 ## Overview
 
