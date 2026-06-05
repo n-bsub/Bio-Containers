@@ -9,35 +9,16 @@ This folder contains a complete WGCNA-to-GO-enrichment pipeline that chains two 
 1. **WGCNA container** (custom-built) — voom normalization, signed hybrid network construction, blockwise module detection, module–trait correlation, and gene-module mapping
 2. **Trinity container** (pre-built from Docker Hub) — GOseq enrichment analysis per module using Trinity's `run_GOseq.pl`
 
-The SLURM job script (`run_wgcna_goseq.sh`) orchestrates both steps, manages input/output directories, and collects results automatically.
+A third step combines all GOseq results into a single Excel workbook using R (run inside the WGCNA container, which doubles as a general R environment). The SLURM job script (`run_wgcna_goseq.sh`) orchestrates all steps, manages input/output directories, and collects results automatically.
 
 ## Pipeline steps
 
-```
-RSEM gene counts + metadata
-        │
-        ▼
-┌─────────────────────────┐
-│  WGCNA container        │
-│  ─ TMM + voom           │
-│  ─ Network construction │
-│  ─ Module detection     │
-│  ─ Module–trait corr.   │
-│  ─ Gene-module export   │
-└─────────┬───────────────┘
-          │ module gene lists
-          ▼
-┌─────────────────────────┐
-│  Trinity container      │
-│  ─ GOseq per module     │
-└─────────┬───────────────┘
-          │ enrichment results
-          ▼
-┌─────────────────────────┐
-│  WGCNA container        │
-│  ─ Combine GOseq        │
-│    results into Excel   │
-└─────────────────────────┘
+```mermaid
+flowchart TD
+    A["RSEM gene counts + metadata"] --> B
+    B["<b>WGCNA container</b><br/>TMM + voom normalization<br/>Network construction<br/>Module detection<br/>Module–trait correlation<br/>Gene-module export"] -->|module gene lists| C
+    C["<b>Trinity container</b><br/>GOseq enrichment per module"] -->|enrichment results| D
+    D["<b>R</b> via WGCNA container<br/>Combine GOseq results into Excel"]
 ```
 
 ## Repository contents
@@ -135,7 +116,7 @@ The script automatically creates a timestamped run directory under `runs/`, exec
 | `samples_cluster.pdf` | WGCNA | Sample dendrogram |
 | `Enrichment_results/*.GOseq.enriched` | GOseq | Enriched GO terms per module |
 | `Enrichment_results/*.GOseq.depleted` | GOseq | Depleted GO terms per module |
-| `Combined_GOseq_Enrichment.xlsx` | Combine | All module enrichment results in a single Excel workbook |
+| `Combined_GOseq_Enrichment.xlsx` | combine_enrichment.R | All module enrichment results in a single Excel workbook |
 
 ## Usage notes
 
