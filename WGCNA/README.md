@@ -19,6 +19,11 @@ flowchart TD
     B["<b>WGCNA container</b><br/>TMM + voom normalization<br/>Network construction<br/>Module detection<br/>Module–trait correlation<br/>Gene-module export"] -->|module gene lists| C
     C["<b>Trinity container</b><br/>GOseq enrichment per module"] -->|enrichment results| D
     D["<b>R</b> via WGCNA container<br/>Combine GOseq results into Excel"]
+
+    style A fill:#f5f5f5,stroke:#333,color:#000
+    style B fill:#f5f5f5,stroke:#333,color:#000
+    style C fill:#f5f5f5,stroke:#333,color:#000
+    style D fill:#f5f5f5,stroke:#333,color:#000
 ```
 
 ## Repository contents
