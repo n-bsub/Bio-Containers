@@ -17,7 +17,7 @@ A third step combines all GOseq results into a single Excel workbook using R (ru
 %%{init: {'theme': 'base', 'themeVariables': {'fontFamily': 'Arial'}}}%%
 flowchart TD
     A["RSEM gene counts + metadata"] --> B
-    B["<b>WGCNA container</b><br/>TMM + voom normalization<br/>Network construction<br/>Module detection<br/>Module–trait correlation<br/>Gene-module export"] -->|module gene lists| C
+    B["<b>WGCNA container</b><br/>TMM + voom normalization<br/>Network construction<br/>Module detection<br/>Module-trait correlation<br/>Gene-module export"] -->|module gene lists| C
     C["<b>Trinity container</b><br/>GOseq enrichment per module"] -->|enrichment results| D
     D["<b>R</b> via WGCNA container<br/>Combine GOseq results into Excel"]
 
