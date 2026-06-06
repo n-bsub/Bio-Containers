@@ -14,6 +14,9 @@ A third step combines all GOseq results into a single Excel workbook using R (ru
 ## Pipeline steps
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {'fontFamily': 'Arial'}}}%%
+flowchart TD
+    A["RSEM gene counts + metadata"] --> B
 flowchart TD
     A["RSEM gene counts + metadata"] --> B
     B["<b>WGCNA container</b><br/>TMM + voom normalization<br/>Network construction<br/>Module detection<br/>Module–trait correlation<br/>Gene-module export"] -->|module gene lists| C
