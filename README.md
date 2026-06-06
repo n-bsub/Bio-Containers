@@ -4,7 +4,7 @@ Dockerfiles and analysis scripts for reproducible bioinformatics workflows on HP
 
 ## Custom containers
 
-### [WGCNA–GOseq Containerized Pipeline](wgcna/)
+### [WGCNA-GOseq Containerized Pipeline](wgcna/)
 
 Complete pipeline for Weighted Gene Co-expression Network Analysis with per-module GO enrichment. Chains a custom WGCNA container (voom normalization, signed hybrid network construction, module detection, module–trait correlation) with a Trinity container (GOseq enrichment), orchestrated by a SLURM job script. See the [wgcna/ README](wgcna/README.md) for full documentation.
 
