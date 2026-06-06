@@ -4,9 +4,9 @@ Dockerfiles and analysis scripts for reproducible bioinformatics workflows on HP
 
 ## Custom containers
 
-### [WGCNA-GOseq Containerized Pipeline](wgcna/)
+### [WGCNA-GOseq Containerized Pipeline](WGCNA/)
 
-Complete pipeline for Weighted Gene Co-expression Network Analysis with per-module GO enrichment. Chains a custom WGCNA container (voom normalization, signed hybrid network construction, module detection, module–trait correlation) with a Trinity container (GOseq enrichment), orchestrated by a SLURM job script. See the [wgcna/ README](wgcna/README.md) for full documentation.
+Complete pipeline for Weighted Gene Co-expression Network Analysis with per-module GO enrichment. Chains a custom WGCNA container (voom normalization, signed hybrid network construction, module detection, module–trait correlation) with a Trinity container (GOseq enrichment), orchestrated by a SLURM job script. See the [WGCNA/ README](WGCNA/README.md) for full documentation.
 
 ## Pre-built containers
 
@@ -15,9 +15,8 @@ Complete pipeline for Weighted Gene Co-expression Network Analysis with per-modu
 Pre-built image pulled from Docker Hub and converted to Apptainer for HPC use. Used in the WGCNA–GOseq pipeline for per-module GOseq enrichment via Trinity's `run_GOseq.pl`.
 
 **Source:**
-- [Dockerfile](https://github.com/trinityrnaseq/trinityrnaseq/tree/master/Docker)
+- [Dockerfile](https://github.com/trinityrnaseq/trinityrnaseq/blob/master/Docker/Dockerfile)
 - [Build script](https://github.com/trinityrnaseq/trinityrnaseq/blob/master/Docker/build_docker.sh)
-- [Docker Hub](https://hub.docker.com/r/trinityrnaseq/trinityrnaseq)
 
 **Pull and convert:**
 
